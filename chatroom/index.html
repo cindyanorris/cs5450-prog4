@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+<title>Student Chat Room</title>
+<style type="text/css">
+   #chatroom 
+   {
+      background-color: #696969;
+      margin-left: auto;
+      margin-right: auto;
+   } 
+   body 
+   {
+      background-color: #696969;
+   }
+    
+   h2 
+   {
+      color: #FFD700;
+      font-family:"Lucida Console", Monaco, monospace;
+   }
+
+   label 
+   {
+      color: #FFD700;
+      font-family:"Lucida Console", Monaco, monospace;
+   }
+    
+   #chatbox 
+   {
+      border: 2px solid #FFD700;
+      border-radius: 10px;
+      background-color: #FFF8DC;
+      height:400px;
+      width:850px;
+      font:16px/26px "Lucida Console", Monaco, monospace;
+      overflow:auto;
+      word-wrap: break-word;
+    }
+
+   .button 
+   {
+      width: 100px;
+      height: 26px;
+      background-color: #FFD700;
+      border: 1px solid black;
+      font-family:"Lucida Console", Monaco, monospace;
+   }
+
+   #userNameBox 
+   {
+      height: 20px;
+      background-color: #FFF8DC;
+      font-family:"Lucida Console", Monaco, monospace;
+      border: 1px solid #FFD700;
+   }
+
+   #colorPick 
+   { 
+      background-color: #FFF8DC;
+      border: 0px;
+      height: 22px;
+      font-family:"Lucida Console", Monaco, monospace;
+   }
+
+   #textCookieBox 
+   {
+      height:80px;
+      width:850px;
+   }
+
+   #cleardiv 
+   {
+      height:40px;
+      width:850px;
+   }
+</style>
+<script type="text/javascript" src="/chatroom/jscolor.min.js"></script>
+<script src="https://www.w3schools.com/lib/w3data.js"></script> 
+<script>
+   function getColor(picker) 
+   {
+      return picker.toHEXString();
+   }
+</script>
+
+<script>
+   //you might want to comment this out or increase the interval value so that it doesn't
+   //happen so frequently until after you've gotten your code debugged.
+   window.setInterval(
+      function() 
+      { 
+         updateChat("/chatclient","POST", "action=get");
+      }, 
+   5000);
+
+   window.onload = init;
+    
+   //get the contents of the chatbox
+   //display either the textdiv or the cookiediv depending upon 
+   //whether the cookies are set
+   function init() 
+   {
+      if (isCookieSet()) 
+      {
+         document.getElementById('textdiv').style.display = "inline";
+         document.getElementById('cookiediv').style.display = "none";
+      } else 
+      {
+         document.getElementById('cookiediv').style.display = "inline";
+         document.getElementById('textdiv').style.display = "none";
+      }
+      updateChat("/chatclient","POST", "action=get");
+   }
+   
+   //this is the ajax code that is used to update the
+   //chatBody and communicate with the web server 
+   function updateChat(url, method, message) 
+   {
+      //alert("making request: " + url + " " + method + " " + message);
+      var xhttp = new XMLHttpRequest();
+      xhttp.onreadystatechange = function() 
+      {
+         //alert("ready change: " + this.readyState + " " + this.status);
+         if (this.readyState == 4 && this.status == 200) 
+         {
+            //alert("response: = " + xhttp.responseText);
+            if (message == "action=get") 
+            {
+               if (xhttp.responseText != "")
+               {
+                  document.getElementById("chatBody").innerHTML = xhttp.responseText;
+               } 
+            }
+         }
+      };
+     
+      xhttp.open(method, url, true); 
+      xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+      xhttp.timeout = 10000;
+      xhttp.ontimeout = function () { alert("Timed out!!!"); }
+      xhttp.send(message);
+   }
+
+   //set the cookie values from the form
+   function setCookie() 
+   {
+      color = document.getElementById('colorPick').value;
+      username = document.getElementById('userNameBox').value;
+      document.cookie = "color=#" + color;
+      document.cookie = "username=" + username;
+      document.getElementById('textdiv').style.display = "inline";
+      document.getElementById('cookiediv').style.display = "none";
+      return false;
+   }
+   
+   //return true if cookie is set 
+   function isCookieSet() 
+   {
+      return document.cookie.search("username=") != -1;
+   }
+   
+   //clear the Chat textbox and the cookies 
+   function clearChat() 
+   {
+      document.cookie = "color=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"; 
+      document.cookie = "username=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"; 
+      //display cookie form and hide text box form
+      document.getElementById("cookiediv").style.display = "inline";
+      document.getElementById("textdiv").style.display = "none";
+      document.getElementById("chatBody").innerHTML = "";
+      updateChat('/chatclient', 'POST', 'action=clear');
+      return false;
+   }
+
+   //send the text in the text area to the server
+   function sendText()
+   {
+      var text = document.getElementById('chat').value; 
+      var postbody = 'action=chat&body=' + text;
+      updateChat('/chatclient', 'POST', postbody);
+      document.getElementById('chat').value = ''; 
+      return false;
+   }
+</script>
+</head>
+<body>
+<div id="chatroom">
+<h2>CS Chat Room</h2>
+<div id="chatbox">
+<div id="chatBody">
+</div>
+</div>
+<br>
+
+<div id="textCookieBox">
+
+<div id="textdiv">
+<form id="textForm" name="form">
+<textarea id="chat" maxlength="250" rows="4" cols="50">Enter chat here...</textarea>
+<input class="button" onclick="sendText()" type="button" value="Send">
+</form>
+</div>
+<div id="cookiediv">
+<form id="cookieForm" name="cookieForm">
+<label>Enter User Name:</label>
+<input id="userNameBox" type='text'> 
+<label>&nbsp;&nbsp;Pick Color:</label>
+<input class="jscolor" value="000000" id="colorPick">
+&nbsp;&nbsp;&nbsp;&nbsp;
+<input class="button" onclick="setCookie()" type="button" value="Start Chat">
+</form>
+</div>
+
+</div>
+
+<div id="cleardiv" >
+<form id="clearData" name="clearData">
+<input class="button" onclick="clearChat()" type="button" value="Clear Chat">
+</form>
+</div>
+
+</div>
+  
+</body>
+</html>
